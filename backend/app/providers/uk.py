@@ -20,8 +20,10 @@ class UKReplayProvider(SeriesProvider):
     name = "uk_replay"
     synthetic = False
 
-    def __init__(self, timeout: float = 15.0, transport=None, use_snapshot: bool = True, days: int = 6):
+    def __init__(self, timeout: float = 15.0, transport=None, use_snapshot: bool = True, days: int = 6,
+                 force_snapshot: bool = False):
         self.timeout, self.transport, self.use_snapshot, self.days = timeout, transport, use_snapshot, days
+        self.force_snapshot = force_snapshot
         self.fc: list | None = None
         self.act: list | None = None
         self.meta: dict = {}
@@ -44,16 +46,19 @@ class UKReplayProvider(SeriesProvider):
         if self.fc is not None:
             return
         snap, live = None, True
-        try:
-            snap = self._fetch_live()
-            if self.use_snapshot:
-                SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
-                SNAPSHOT.write_text(json.dumps(snap), encoding="utf-8")
-        except Exception as e:                       # network down: use last real snapshot if present
-            if self.use_snapshot and SNAPSHOT.exists():
-                snap, live = json.loads(SNAPSHOT.read_text(encoding="utf-8")), False
-            else:
-                raise ProviderError(f"UK Carbon Intensity API unavailable: {e}")
+        if self.force_snapshot and self.use_snapshot and SNAPSHOT.exists():
+            snap, live = json.loads(SNAPSHOT.read_text(encoding="utf-8")), False
+        else:
+            try:
+                snap = self._fetch_live()
+                if self.use_snapshot:
+                    SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
+                    SNAPSHOT.write_text(json.dumps(snap), encoding="utf-8")
+            except Exception as e:                       # network down: use last real snapshot if present
+                if self.use_snapshot and SNAPSHOT.exists():
+                    snap, live = json.loads(SNAPSHOT.read_text(encoding="utf-8")), False
+                else:
+                    raise ProviderError(f"UK Carbon Intensity API unavailable: {e}")
         pts = [p for p in snap["points"] if p["forecast"] is not None or p["actual"] is not None]
         self.fc = [float(p["forecast"] if p["forecast"] is not None else p["actual"]) for p in pts]
         self.act = [float(p["actual"] if p["actual"] is not None else self.fc[i]) for i, p in enumerate(pts)]

@@ -76,6 +76,21 @@
     "wait_opt_min": 303.9,
     "e_base_g_mean": 82466,
     "e_opt_g_mean": 79068
+   },
+   "uk_real_data": {
+    "seeds": 20,
+    "savings_mean": 27.18,
+    "savings_min": 9.77,
+    "savings_max": 45.93,
+    "savings_stdev": 9.91,
+    "negative_runs": 0,
+    "forecasted_savings_mean": 26.53,
+    "hit_base": 100.0,
+    "hit_opt": 100.0,
+    "wait_base_min": 2.5,
+    "wait_opt_min": 275,
+    "e_base_g_mean": 8421,
+    "e_opt_g_mean": 6033
    }
   }
  },
@@ -158,6 +173,21 @@
     "wait_opt_min": 299.4,
     "e_base_g_mean": 82466,
     "e_opt_g_mean": 79607
+   },
+   "uk_real_data": {
+    "seeds": 20,
+    "savings_mean": 23.57,
+    "savings_min": 9.77,
+    "savings_max": 45.81,
+    "savings_stdev": 9.32,
+    "negative_runs": 0,
+    "forecasted_savings_mean": 22.31,
+    "hit_base": 100.0,
+    "hit_opt": 100.0,
+    "wait_base_min": 2.5,
+    "wait_opt_min": 259.05,
+    "e_base_g_mean": 8421,
+    "e_opt_g_mean": 6337
    }
   }
  }

@@ -93,8 +93,18 @@ This script guides an evaluator or presenter through a live end-to-end walkthrou
      - Jobs finish and move to `DONE`.
      - In the KPI cards, the **Realized Carbon Saved** card lights up with verified post-execution data evaluated against actual grid intensity.
   3. Scroll to the **Scenario Results** card at the bottom:
-     - Review the bar chart and 20-seed summary table across `weekday_mix`, `tight_deadlines`, `api_outage`, `overrun_cloudy`, and `heavy_load`.
-     - Point out that even under heavy overruns and cloud cover, deadline compliance remains 99% thanks to the adaptive padding improvements.
+     - Review the bar chart and 20-seed summary table across `weekday_mix`, `tight_deadlines`, `api_outage`, `overrun_cloudy`, `heavy_load`, and **`uk_real_data`**.
+     - Point out the **23.6% realized savings on real UK grid data** (peaking at 45.8%), completely backed by the committed offline snapshot `backend/data/uk_snapshot.json` (zero venue Wi-Fi dependence).
+     - State the honest deadline numbers: 100% in typical runs, dipping only under extreme stress (98% for tight deadlines, 95% under 24-job heavy load).
+
+---
+
+## Stretch Items Note (Keep Demo Focused on Core)
+Keep the 5-minute presentation strictly focused on the core: **time-shifting, SLA guarantee, and provider failover**.
+If asked by evaluators about stretch items:
+- **Stretch S1 (Spatial shifting):** Algorithmic multi-region routing with network penalty ($5.0\text{ gCO}_2/\text{GB}$) in `core.py`, verified with invariant unit tests.
+- **Stretch S2 (Kubernetes):** Cloud-native dry-run manifest generator serializing `batch/v1` Jobs annotated with carbon windows via `GET /executor`.
+- **Stretch S3 (Calibration - Primary Empirical Stretch):** Standalone hardware measurement tool (`python -m backend.app.calibrate`) utilizing `codecarbon.EmissionsTracker` to measure live compute power draw.
 
 ---
 

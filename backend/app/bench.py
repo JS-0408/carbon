@@ -20,7 +20,7 @@ from .config import ROOT, Settings, load_settings
 from .core import Job
 from .engine import Engine
 from .estimator import n_steps
-from .providers import MockProvider
+from .providers import MockProvider, UKReplayProvider
 
 KINDS = {  # kind: (workload_type, dur_lo, dur_hi, kw, slack_lo, slack_hi, weight)
     "urgent_inference": ("realtime_inference", 30, 60, 2.0, 1, 3, 2),
@@ -36,14 +36,18 @@ SCENARIOS = [
     ("overrun_cloudy", "Cloudy day (weak solar dip) and training jobs run 45% longer than estimated",
      dict(n=12, solar=0.35, overrun=1.45)),
     ("heavy_load", "24 jobs competing for the same 8 kW", dict(n=24)),
+    ("uk_real_data", "12 mixed jobs replayed on REAL Great Britain grid data (UK Carbon Intensity API)",
+     dict(n=12, real_data="uk")),
 ]
 SCENARIO_MAP = {n: (d, sc) for n, d, sc in SCENARIOS}
 
 
 def bench_settings(base: Settings | None = None, **over) -> Settings:
     s = base or load_settings()
-    only = {"default": s.regions["default"]}
-    return s.copy(regions=only, **over)
+    regions = {"default": s.regions["default"]}
+    if "uk" in s.regions:
+        regions["uk"] = s.regions["uk"]
+    return s.copy(regions=regions, **over)
 
 
 def gen_jobs(rng: random.Random, n: int, tight: bool, step: int, spd: int) -> list[dict]:
@@ -75,9 +79,18 @@ def run_once(settings: Settings, sc: dict, seed: int, keep_detail: bool = False)
     s = settings
     tick = s.tick_steps
     outage = set(sc.get("outage", []))
-    prov = MockProvider(s, seed=seed, solar=sc.get("solar", 1.0), fail_fn=lambda now: (now // tick) in outage)
-    eng = Engine(s, provider=prov, seed=seed, auto_replan=False, origin=datetime(2026, 10, 9, tzinfo=timezone.utc),
-                 adaptive_pad=False)
+    is_uk = sc.get("real_data") == "uk"
+    if is_uk:
+        prov = UKReplayProvider(use_snapshot=True, force_snapshot=True)
+        prov.load()
+        origin = datetime.fromisoformat(prov.meta["from"].replace("Z", "+00:00"))
+        eng = Engine(s, provider=prov, seed=seed, auto_replan=False, origin=origin, adaptive_pad=False)
+        home_region = "uk"
+    else:
+        prov = MockProvider(s, seed=seed, solar=sc.get("solar", 1.0), fail_fn=lambda now: (now // tick) in outage)
+        eng = Engine(s, provider=prov, seed=seed, auto_replan=False, origin=datetime(2026, 10, 9, tzinfo=timezone.utc),
+                     adaptive_pad=False)
+        home_region = "default"
     rng = random.Random(seed)
     specs = gen_jobs(rng, sc["n"], sc.get("tight", False), s.step_min, s.spd)
     revealed: set = set()
@@ -85,7 +98,7 @@ def run_once(settings: Settings, sc: dict, seed: int, keep_detail: bool = False)
         for sp in specs:
             if sp["id"] not in revealed and sp["sub"] < tick_start + tick:
                 revealed.add(sp["id"])
-                eng.add_job(make_job(eng, sp, sc.get("overrun", 1.0)), plan_now=False)
+                eng.add_job(make_job(eng, sp, sc.get("overrun", 1.0), home=home_region, allowed=[home_region]), plan_now=False)
         eng.replan("tick")
         eng.advance(tick)
     while any(j.state != "DONE" for j in eng.jobs.values()) and eng.now < s.timeline_steps - 80:
@@ -103,7 +116,7 @@ def run_once(settings: Settings, sc: dict, seed: int, keep_detail: bool = False)
            "alert_types": sorted(eng.alerts.types())}
     if keep_detail:
         out["detail"] = {"jobs": eng.jobs_view(), "alerts": eng.alerts.as_list(),
-                         "series": [round(v) for v in eng.actual["default"][:s.spd * 3]]}
+                         "series": [round(v) for v in eng.actual[home_region][:s.spd * 3]]}
     return out
 
 
@@ -134,7 +147,8 @@ def run_all(seeds: int = 20, settings: Settings | None = None) -> dict:
     s = settings or bench_settings()
     results = [run_scenario(n, seeds, s, i) for i, (n, _, _) in enumerate(SCENARIOS)]
     return {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "seeds": seeds,
-            "data": "synthetic (mock provider)", "pad": s.pad, "pad_by_type": s.pad_by_type, "scenarios": results}
+            "data": "synthetic (mock provider) + real data (UK Carbon Intensity API)",
+            "pad": s.pad, "pad_by_type": s.pad_by_type, "scenarios": results}
 
 
 def compare_padding(seeds: int = 20) -> dict:

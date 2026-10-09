@@ -64,3 +64,10 @@ This document records key architectural decisions, rationale, and findings durin
 - **Context:** Moving workloads between regions can access cleaner grids but incurs carbon emissions from network data transfers.
 - **Decision:** Added `transfer_g_per_gb` (default 5.0 gCO2/GB) in `core.py` and evaluated total carbon $C_{total} = C_{compute} + \text{data\_gb} \times \text{penalty}$.
 - **Consequences:** Scheduler automatically shifts large data jobs only when the grid difference exceeds the transport cost.
+
+---
+
+### ADR-010: Offline UK Grid Snapshot & Contention Disclosure
+- **Context:** Real-data evaluation must remain fully functional in offline demo venues where Wi-Fi is unavailable or unstable. Additionally, executive summaries must accurately reflect deadline degradation under extreme contention.
+- **Decision:** Fetched and committed a 289-interval 6-day Great Britain grid trace to `backend/data/uk_snapshot.json`. Enhanced `UKReplayProvider` with instantaneous offline snapshot loading. Added scenario `uk_real_data` to the canonical benchmark suite. Explicitly disclosed the deadline compliance dips (98% under tight deadlines, 95% under heavy load) in `REPORT.md`.
+- **Consequences:** The benchmark and demo run 100% offline without network dependencies, verifying 23.6% mean carbon savings on real grid data while maintaining transparency regarding peak queue contention.
