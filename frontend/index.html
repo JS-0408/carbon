@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carbon-aware AI workload scheduler</title>
+<meta name="description" content="Dashboard for a carbon-aware scheduler that shifts flexible AI jobs to cleaner grid windows while meeting deadlines and capacity limits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:hsl(228 32% 7%); --bg2:hsl(228 28% 10%); --card:hsl(228 26% 13% / .72); --line:hsl(228 20% 24%);
+  --text:hsl(220 25% 94%); --muted:hsl(222 14% 66%); --accent:hsl(158 72% 52%); --accent2:hsl(188 85% 55%);
+  --warn:hsl(38 95% 58%); --crit:hsl(352 85% 64%); --info:hsl(212 90% 66%); --ok:hsl(158 72% 52%);
+  --t-train:hsl(262 80% 70%); --t-batch:hsl(205 90% 62%); --t-etl:hsl(38 92% 60%); --t-rt:hsl(330 80% 68%); --t-other:hsl(220 12% 62%);
+  --shadow:0 10px 40px hsl(228 60% 2% / .55); --radius:16px;
+}
+[data-theme="light"]{
+  --bg:hsl(210 40% 97%); --bg2:hsl(210 35% 93%); --card:hsl(0 0% 100% / .85); --line:hsl(214 25% 82%);
+  --text:hsl(224 30% 14%); --muted:hsl(220 12% 40%); --accent:hsl(160 80% 28%); --accent2:hsl(194 90% 32%);
+  --warn:hsl(32 95% 36%); --crit:hsl(352 75% 42%); --info:hsl(214 85% 40%); --ok:hsl(160 80% 28%);
+  --t-train:hsl(262 60% 48%); --t-batch:hsl(210 85% 42%); --t-etl:hsl(32 90% 40%); --t-rt:hsl(330 70% 44%); --t-other:hsl(220 10% 42%);
+  --shadow:0 8px 30px hsl(220 30% 30% / .15);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.5;min-height:100vh;
+  background-image:radial-gradient(900px 500px at 8% -10%,hsl(158 80% 45% / .16),transparent 60%),radial-gradient(800px 500px at 100% 0%,hsl(262 80% 60% / .14),transparent 60%);
+  background-attachment:fixed}
+h1,h2,h3{font-family:Outfit,Inter,sans-serif;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:700}
+h2{font-size:1.15rem;font-weight:600}
+h3{font-size:1rem;font-weight:600}
+a{color:var(--accent2)}
+:focus-visible{outline:3px solid var(--accent2);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 20px 60px}
+header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.brand{display:flex;gap:14px;align-items:center}
+.logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:0 6px 24px hsl(158 80% 45% / .35);font-size:24px}
+.sub{color:var(--muted);font-size:.9rem}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select,input{font:inherit;color:inherit}
+.btn{background:linear-gradient(180deg,hsl(228 26% 20%),hsl(228 26% 16%));border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer;transition:transform .12s,border-color .2s,box-shadow .2s;font-weight:500}
+[data-theme="light"] .btn{background:linear-gradient(180deg,#fff,hsl(210 30% 94%))}
+.btn:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 4px 16px hsl(158 80% 45% / .18)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:hsl(228 40% 8%);border:0;font-weight:600}
+[data-theme="light"] .btn.primary{color:#fff}
+.btn.warn{border-color:var(--warn)}
+.btn[disabled]{opacity:.5;cursor:wait}
+select,input[type=text],input[type=number],input[type=datetime-local]{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%}
+.banner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-radius:12px;padding:10px 14px;margin:8px 0;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(10px)}
+.banner b{font-weight:600}
+.banner.fallback{border-color:var(--warn);background:linear-gradient(90deg,hsl(38 95% 58% / .16),transparent)}
+.banner.synthetic{border-color:var(--info)}
+.banner.real{border-color:var(--ok)}
+.pill{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;border:1px solid currentColor}
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);backdrop-filter:blur(14px);animation:rise .5s both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.kpi .label{color:var(--muted);font-size:.82rem;display:flex;gap:6px;align-items:center}
+.kpi .value{font-family:Outfit;font-size:2rem;font-weight:700;margin-top:4px;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.kpi .hint{font-size:.78rem;color:var(--muted)}
+.tag{font-size:.68rem;text-transform:none;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--muted)}
+.tag.f{color:var(--info);border-color:var(--info)} .tag.r{color:var(--ok);border-color:var(--ok)}
+.two{grid-template-columns:2fr 1fr} .two-eq{grid-template-columns:1fr 1fr}
+@media(max-width:980px){.two,.two-eq{grid-template-columns:1fr}}
+section{margin-top:18px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+svg{max-width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted);margin-top:8px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:.78rem;position:sticky;top:0;background:var(--bg2)}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover,tbody tr.sel{background:hsl(158 70% 50% / .1)}
+.scroll{max-height:380px;overflow:auto;border-radius:10px}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:1px 8px;font-size:.74rem;font-weight:600;border:1px solid currentColor}
+.s-PLANNED{color:var(--info)} .s-RUNNING{color:var(--warn)} .s-DONE{color:var(--ok)} .s-PENDING{color:var(--muted)}
+.reason{color:var(--muted);max-width:420px}
+.alt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)}
+.alt.best{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.alt .t{font-family:Outfit;font-size:1.25rem;font-weight:600}
+.alts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:10px 0}
+.alerts{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow:auto}
+.alert{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:8px 10px;background:var(--bg2);font-size:.85rem}
+.alert.critical{border-left-color:var(--crit)} .alert.warning{border-left-color:var(--warn)} .alert.info{border-left-color:var(--info)}
+.alert.ack{opacity:.55}
+.alert .ico{font-weight:700;min-width:64px}
+.alert.critical .ico{color:var(--crit)} .alert.warning .ico{color:var(--warn)} .alert.info .ico{color:var(--info)}
+.alert .msg{flex:1}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+abbr[title]{text-decoration:underline dotted;cursor:help}
+.err{color:var(--crit);font-size:.85rem;margin-top:8px;white-space:pre-wrap}
+.ok-msg{color:var(--ok);font-size:.85rem;margin-top:8px}
+.bars text{font-size:11px;fill:var(--muted)}
+.empty{color:var(--muted);padding:18px;text-align:center}
+.toast{position:fixed;right:18px;bottom:18px;background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;max-width:360px;z-index:10}
+.toast.show{opacity:1;transform:none}
+.mono{font-variant-numeric:tabular-nums}
+.sr{position:absolute;left:-9999px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">🌿</div>
+      <div>
+        <h1>Carbon-aware AI workload scheduler</h1>
+        <div class="sub">Runs flexible AI jobs when the grid is cleaner, without missing deadlines. <span id="simclock" class="mono"></span></div>
+      </div>
+    </div>
+    <div class="toolbar" role="toolbar" aria-label="Simulation controls">
+      <label class="sr" for="scenario">Scenario</label>
+      <select id="scenario" aria-label="Scenario" style="width:auto"></select>
+      <button class="btn" id="btn-seed" title="Replace the queue with this scenario">Load scenario</button>
+      <button class="btn primary" id="btn-adv6" title="Advance the simulated clock 6 hours">+6 h</button>
+      <button class="btn" id="btn-adv24" title="Advance the simulated clock 24 hours">+24 h</button>
+      <button class="btn warn" id="btn-outage" title="Simulate the carbon data provider going down">Simulate API outage</button>
+      <button class="btn" id="btn-replan" title="Re-plan all jobs that have not started">Re-plan</button>
+      <button class="btn" id="btn-theme" aria-label="Toggle light and dark theme">Theme</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" role="status" aria-live="polite"></div>
+
+  <div class="grid kpis" id="kpis" aria-label="Key results"></div>
+
+  <section aria-labelledby="h-timeline">
+    <div class="card">
+      <div class="sec-head"><h2 id="h-timeline">Timeline</h2><span class="sub">Grid carbon intensity (<abbr title="grams of CO2 emitted per kilowatt-hour of electricity">gCO2/kWh</abbr>) and when each job runs</span></div>
+      <div id="timeline"></div>
+      <div class="legend" id="tl-legend"></div>
+    </div>
+  </section>
+
+  <section class="grid two" aria-label="Queue and decisions">
+    <div class="card">
+      <div class="sec-head"><h2>Job queue</h2><span class="sub" id="queue-count"></span></div>
+      <div class="scroll"><table id="queue"><thead><tr><th>Job</th><th>State</th><th>Region</th><th>Starts</th><th>Deadline</th><th><abbr title="Time left between the planned finish and the deadline">Slack</abbr></th><th>Why</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card" id="decision">
+      <h2>Decision support</h2>
+      <div class="empty">Select a job in the queue to see why it was scheduled this way.</div>
+    </div>
+  </section>
+
+  <section class="grid two-eq" aria-label="Alerts and submission">
+    <div class="card">
+      <div class="sec-head"><h2>Alerts</h2><span class="sub" id="alert-count"></span></div>
+      <div class="alerts" id="alerts"></div>
+    </div>
+    <div class="card">
+      <h2>Submit a job</h2>
+      <p class="sub" style="margin:4px 0 12px">Preview the chosen window first, then confirm. All times are UTC.</p>
+      <form id="jobform" class="form" novalidate>
+        <div><label for="f-id">Job name</label><input id="f-id" type="text" value="my-job-001"></div>
+        <div><label for="f-type">Workload type</label>
+          <select id="f-type"><option value="model_training">Model training</option><option value="batch_inference" selected>Batch inference</option><option value="etl">ETL</option><option value="realtime_inference">Real-time inference (never delayed)</option><option value="other">Other</option></select></div>
+        <div><label for="f-dur">Estimated duration (minutes)</label><input id="f-dur" type="number" value="90" min="1" max="4320"></div>
+        <div><label for="f-p90"><abbr title="Optional: a pessimistic (90th percentile) duration. The scheduler plans with it instead of adding padding.">Slow-case duration</abbr> (min, optional)</label><input id="f-p90" type="number" min="1" placeholder="e.g. 120"></div>
+        <div><label for="f-kw">Power draw (<abbr title="kilowatts: how much electricity the job uses while running">kW</abbr>)</label><input id="f-kw" type="number" step="0.1" value="1.5" min="0.1"></div>
+        <div><label for="f-sub">Submitted at (UTC)</label><input id="f-sub" type="datetime-local"></div>
+        <div><label for="f-dl"><abbr title="Service-level agreement: the latest time the job must be finished">Deadline</abbr> (UTC)</label><input id="f-dl" type="datetime-local"></div>
+        <div><label for="f-regions">Allowed regions</label><input id="f-regions" type="text" value="default" title="Comma separated region keys. See the data source banner for what is available."></div>
+        <div><label for="f-gb">Data to move (GB)</label><input id="f-gb" type="number" min="0" value="0" title="Only matters when more than one region is allowed"></div>
+      </form>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn" id="btn-preview" type="button">Preview window</button>
+        <button class="btn primary" id="btn-submit" type="button">Confirm and submit</button>
+      </div>
+      <div id="form-msg" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-bench">
+    <div class="card">
+      <div class="sec-head"><h2 id="h-bench">Scenario results</h2>
+        <div class="toolbar"><span class="sub" id="bench-meta"></span><button class="btn" id="btn-bench">Run benchmark (20 seeds)</button></div></div>
+      <div id="bench"></div>
+    </div>
+  </section>
+  <p class="sub">All savings are labelled <span class="tag f">forecasted</span> (predicted when planned) or <span class="tag r">realized</span> (measured against actual intensity after the jobs ran). Individual runs can be negative when forecasts are wrong. Power is declared by the job, not measured.</p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const TYPE = {model_training:['Training','var(--t-train)'],batch_inference:['Batch inference','var(--t-batch)'],etl:['ETL','var(--t-etl)'],realtime_inference:['Real-time','var(--t-rt)'],other:['Other','var(--t-other)']};
+let TL=null, JOBS=[], SELECTED=null, OUTAGE=false;
+
+async function api(path, opts){
+  const r = await fetch(path, opts && {method:opts.method||'GET', headers:{'Content-Type':'application/json'}, body: opts.body?JSON.stringify(opts.body):undefined});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok){ const e = new Error(j.detail||r.statusText); e.fix=j.fix; e.status=r.status; throw e; }
+  return j;
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),3200)}
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => n==null?'-':Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+function lab(iso){ if(!iso||!TL) return '-'; const f=TL.forecast; const st=Math.round((new Date(iso)-new Date(f.origin))/60000/f.step_minutes); const spd=TL.steps_per_day; const m=(st%spd)*f.step_minutes; return `D${Math.floor(st/spd)+1} ${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`}
+function hm(min){ if(min==null) return '-'; const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60; return (min<0?'-':'')+(h?h+' h ':'')+String(m).padStart(h?2:1,'0')+' min'}
+
+/* ---------------- banner & KPIs ---------------- */
+function renderBanner(h, f){
+  const b=$('#banner'); let cls='banner', html='';
+  const pills=[];
+  if(h.fallback_active){cls+=' fallback'; html+=`<span class="pill" style="color:var(--warn)">⚠ Fallback profile in use</span><span>Carbon data is unavailable${h.last_provider_error?` (${esc(h.last_provider_error)})`:''}. Planning uses a static historical-average profile, so savings are less reliable.</span>`;}
+  else if(h.synthetic){cls+=' synthetic'; html+=`<span class="pill" style="color:var(--info)">Synthetic data</span><span>Grid intensity is simulated, not real. Source: <b>${esc(f.source)}</b> · ${esc(f.label)}</span>`;}
+  else {cls+=' real'; html+=`<span class="pill" style="color:var(--ok)">Real data</span><span>Source: <b>${esc(f.source)}</b> · ${esc(f.label)}${f.partial?' · covers only part of the horizon, rest uses static profile':''}</span>`;}
+  html+=`<span class="sub" style="margin-left:auto">Executor: ${esc(h.executor)} · Regions: ${esc(h.regions.join(', '))}</span>`;
+  b.className=cls; b.innerHTML=html;
+  $('#simclock').textContent='· simulated time '+h.sim_time.replace('T',' ').replace('Z',' UTC');
+  OUTAGE=h.fallback_active; $('#btn-outage').textContent = OUTAGE?'Restore API':'Simulate API outage';
+}
+function kpi(label,value,hint,tag){return `<div class="card kpi"><div class="label">${label}${tag?` <span class="tag ${tag[0]}">${tag}</span>`:''}</div><div class="value mono">${value}</div><div class="hint">${hint||''}</div></div>`}
+function renderKpis(m){
+  const f=m.forecasted, r=m.realized, k=r||f;
+  const sv = x=>x?`${x.savings_pct.toFixed(1)}%`:'-';
+  const basis = r?'realized':(f?'forecasted':'');
+  $('#kpis').innerHTML =
+    kpi('Carbon saved', sv(f), f?`${fmt(f.jobs)} planned jobs, vs running immediately`:'No jobs planned yet','forecasted') +
+    kpi('Carbon saved', sv(r), r?`${fmt(r.jobs)} completed jobs, actual intensity`:'Advance the clock so jobs finish','realized') +
+    kpi('Baseline vs optimized', k?`${fmt(k.e_base_g)} → ${fmt(k.e_opt_g)} g`:'-', k?'grams CO2, same signal both sides':'', basis) +
+    kpi('Deadlines met', m.deadlines?`${m.deadlines.opt_pct.toFixed(0)}%`:'-', m.deadlines?`${m.deadlines.base_pct.toFixed(0)}% if run immediately`:'After jobs complete','realized') +
+    kpi('Average wait', m.wait?hm(m.wait.opt_min):'-', m.wait?`${hm(m.wait.base_min)} if run immediately. This is the cost of delaying.`:'The delay cost of saving carbon','realized');
+}
+
+/* ---------------- timeline ---------------- */
+function renderTimeline(){
+  const host=$('#timeline'); if(!TL||!TL.forecast.values.length){host.innerHTML='<div class="empty">No data</div>';return}
+  const f=TL.forecast, spd=TL.steps_per_day, jobs=TL.jobs;
+  let x1=Math.max(spd*2, ...jobs.map(j=>Math.max(j.dl, (j.start??0)+(j.n_actual||j.n_plan), (j.base_start??0)+j.n_base)+4));
+  x1=Math.min(Math.ceil(x1/12)*12, f.values.length);
+  const W=1100, ml=150, mr=14, cw=W-ml-mr, ch=150, lane=30, top=14, H=top+ch+34+jobs.length*lane+10;
+  const X=s=>ml+s/x1*cw;
+  const vals=f.values.slice(0,x1), act=f.actual?f.actual.slice(0,x1):null;
+  const all=vals.concat(act||[]); let lo=Math.min(...all), hi=Math.max(...all); const pad=(hi-lo)*.12||10; lo-=pad; hi+=pad;
+  const Y=v=>top+ch-(v-lo)/(hi-lo)*ch;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Carbon intensity forecast and job schedule timeline">
+  <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="hsl(188 85% 55%)" stop-opacity=".45"/><stop offset="1" stop-color="hsl(188 85% 55%)" stop-opacity="0"/></linearGradient></defs>`;
+  for(let d=0; d*spd<=x1; d++){ const x=X(d*spd); s+=`<line x1="${x}" x2="${x}" y1="${top}" y2="${H-8}" stroke="var(--line)" stroke-dasharray="3 5"/><text x="${x+4}" y="${top+10}" fill="var(--muted)" font-size="11">Day ${d+1}</text>`;}
+  for(let q=0;q<=4;q++){const v=lo+(hi-lo)*q/4; s+=`<line x1="${ml}" x2="${W-mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" opacity=".4"/><text x="${ml-8}" y="${Y(v)+4}" text-anchor="end" fill="var(--muted)" font-size="11">${Math.round(v)}</text>`;}
+  const path=a=>a.map((v,i)=>`${i?'L':'M'}${X(i+.5).toFixed(1)} ${Y(v).toFixed(1)}`).join('');
+  s+=`<path d="${path(vals)} L${X(x1)} ${top+ch} L${X(0)} ${top+ch}Z" fill="url(#g1)"/><path d="${path(vals)}" fill="none" stroke="hsl(188 85% 55%)" stroke-width="2"/>`;
+  if(act) s+=`<path d="${path(act)}" fill="none" stroke="var(--warn)" stroke-width="1.4" stroke-dasharray="4 3" opacity=".9"/>`;
+  s+=`<text x="${ml}" y="${top+ch+16}" fill="var(--muted)" font-size="11">${f.label}: ${f.unit}</text>`;
+  const y0=top+ch+30;
+  jobs.forEach((j,i)=>{
+    const y=y0+i*lane, col=(TYPE[j.type]||TYPE.other)[1], sel=SELECTED===j.id;
+    s+=`<g class="jrow" data-id="${esc(j.id)}" style="cursor:pointer"><rect x="0" y="${y-3}" width="${W}" height="${lane-2}" fill="${sel?'hsl(158 70% 50% / .12)':'transparent'}"/>
+      <text x="${ml-8}" y="${y+14}" text-anchor="end" fill="var(--text)" font-size="11.5">${esc(j.id)}</text>`;
+    if(j.base_start!=null) s+=`<rect x="${X(j.base_start)}" y="${y}" width="${Math.max(2,X(j.base_start+j.n_base)-X(j.base_start))}" height="8" rx="3" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="3 2"><title>Run immediately: ${esc(j.id)}</title></rect>`;
+    if(j.start!=null){ const n=j.n_actual||j.n_plan, w=Math.max(3,X(j.start+n)-X(j.start)), miss=j.missed;
+      s+=`<rect x="${X(j.start)}" y="${y+10}" width="${w}" height="12" rx="4" fill="${col}" fill-opacity="${j.state==='DONE'?.95:.6}" stroke="${miss?'var(--crit)':(j.forced?'var(--warn)':'none')}" stroke-width="${miss||j.forced?2.5:0}" ${j.forced&&!miss?'stroke-dasharray="4 2"':''}><title>${esc(j.id)} · ${j.state}${miss?' · DEADLINE MISSED':''}${j.forced?' · forced start':''}</title></rect>`;}
+    s+=`<path d="M${X(j.dl)} ${y+1} l5 10 l-5 10 l-5 -10z" fill="${j.missed?'var(--crit)':'var(--text)'}" opacity=".85"><title>Deadline for ${esc(j.id)}</title></path></g>`;
+  });
+  const nx=X(TL.now); s+=`<line x1="${nx}" x2="${nx}" y1="${top}" y2="${H-8}" stroke="var(--accent)" stroke-width="2"/><text x="${nx+4}" y="${top+24}" fill="var(--accent)" font-size="11" font-weight="600">now</text>`;
+  s+='</svg>'; host.innerHTML=s;
+  host.querySelectorAll('.jrow').forEach(g=>g.addEventListener('click',()=>select(g.dataset.id)));
+  const types=[...new Set(jobs.map(j=>j.type))];
+  $('#tl-legend').innerHTML = types.map(t=>`<span><i class="sw" style="background:${(TYPE[t]||TYPE.other)[1]}"></i>${(TYPE[t]||TYPE.other)[0]}</span>`).join('')+
+   `<span><i class="sw" style="border:1.5px dashed var(--muted)"></i>Run immediately (baseline)</span><span>◆ Deadline</span><span><i class="sw" style="border:2px solid var(--crit)"></i>Missed deadline</span><span><i class="sw" style="border:2px dashed var(--warn)"></i>Forced start (SLA risk)</span><span><i class="sw" style="background:var(--warn);height:3px;margin-top:5px"></i>Actual intensity</span>`;
+}
+
+/* ---------------- queue & decision ---------------- */
+function renderQueue(){
+  $('#queue-count').textContent=`${JOBS.length} jobs`;
+  $('#queue tbody').innerHTML = JOBS.length? JOBS.map(j=>`<tr data-id="${esc(j.job_id)}" class="${SELECTED===j.job_id?'sel':''}" tabindex="0">
+    <td><b>${esc(j.job_id)}</b><div class="sub">${(TYPE[j.workload_type]||TYPE.other)[0]} · ${j.power_kw} kW</div></td>
+    <td><span class="badge s-${j.state}">${j.state}</span>${j.infeasible?' <span class="badge" style="color:var(--crit)">INFEASIBLE</span>':''}${j.forced&&!j.infeasible?' <span class="badge" style="color:var(--warn)">FORCED</span>':''}${j.deadline_missed?' <span class="badge" style="color:var(--crit)">MISSED</span>':''}</td>
+    <td>${esc(j.region)}</td><td class="mono">${lab(j.actual_start||j.planned_start)}</td><td class="mono">${lab(j.sla_deadline)}</td>
+    <td class="mono">${j.slack_minutes==null?'-':hm(j.slack_minutes)}</td><td class="reason">${esc(j.reason)}</td></tr>`).join('')
+    : '<tr><td colspan="7" class="empty">No jobs yet. Load a scenario or submit one.</td></tr>';
+  document.querySelectorAll('#queue tbody tr[data-id]').forEach(tr=>{tr.addEventListener('click',()=>select(tr.dataset.id));tr.addEventListener('keydown',e=>{if(e.key==='Enter')select(tr.dataset.id)})});
+}
+async function select(id){
+  SELECTED=id; renderQueue(); renderTimeline();
+  const [ex,jd]=await Promise.all([api('/explain/'+encodeURIComponent(id)),api('/jobs/'+encodeURIComponent(id))]);
+  const j=jd.job, names={run_now:'Run now',optimal:'Chosen (lowest carbon)',forced_start:'Forced start',latest_feasible:'Latest feasible'};
+  const best=Math.min(...ex.alternatives.map(a=>a.gco2));
+  const alts=ex.alternatives.map(a=>`<div class="alt ${a.gco2===best?'best':''}"><div class="sub">${names[a.label]||a.label}</div><div class="t mono">${fmt(a.gco2)} g</div><div class="sub">starts ${a.label_start}<br>finishes ${lab(a.finish)}${a.region!==j.home_region?`<br>region ${esc(a.region)}`:''}</div></div>`).join('');
+  const runNow=ex.alternatives.find(a=>a.label==='run_now'), chosen=ex.alternatives.find(a=>a.label==='optimal'||a.label==='forced_start');
+  const saved=runNow&&chosen?runNow.gco2-chosen.gco2:0;
+  $('#decision').innerHTML=`<div class="sec-head"><h2>Decision support</h2><span class="badge s-${j.state}">${j.state}</span></div>
+    <h3>${esc(j.job_id)}</h3><p style="margin:6px 0">${esc(ex.reason)}</p>
+    <div class="alts">${alts}</div>
+    <p class="sub">${saved>0?`Forecast saving versus running now: <b>${fmt(saved)} g CO2</b> <span class="tag f">forecasted</span>. `:''}Planned with ${hm(j.planned_minutes)} (estimate ${hm(j.estimated_minutes)} plus safety margin). Deadline ${lab(j.sla_deadline)}.</p>
+    ${j.actual_minutes?`<p class="sub">Finished ${lab(j.actual_end)} after ${hm(j.actual_minutes)}${j.deadline_missed?' · <b style="color:var(--crit)">deadline missed</b>':' · deadline met'}.</p>`:''}`;
+}
+
+/* ---------------- alerts ---------------- */
+const ICON={critical:'● Critical',warning:'▲ Warning',info:'◆ Info'};
+function renderAlerts(a){
+  $('#alert-count').textContent=`${a.filter(x=>!x.acknowledged).length} unacknowledged`;
+  $('#alerts').innerHTML=a.length?a.slice(0,60).map(x=>`<div class="alert ${x.level} ${x.acknowledged?'ack':''}"><span class="ico">${ICON[x.level]}</span><span class="msg"><b>${x.type.replace('_',' ')}</b> · ${esc(x.message)}<div class="sub mono">${x.ts.replace('T',' ').replace('Z','')}</div></span>${x.acknowledged?'<span class="sub">Acknowledged</span>':`<button class="btn" data-ack="${x.id}" aria-label="Acknowledge alert ${x.id}">Acknowledge</button>`}</div>`).join(''):'<div class="empty">No alerts</div>';
+  document.querySelectorAll('[data-ack]').forEach(b=>b.addEventListener('click',async()=>{await api('/alerts/'+b.dataset.ack+'/ack',{method:'POST'});refresh()}));
+}
+
+/* ---------------- benchmark ---------------- */
+function renderBench(b){
+  const sc=b.scenarios||[]; $('#bench-meta').textContent=sc.length?`${b.seeds} seeds per scenario · ${b.data}`:'';
+  if(!sc.length){$('#bench').innerHTML=`<div class="empty">${esc(b.data||'No results yet')}. Click "Run benchmark".</div>`;return}
+  const W=900,H=260,ml=60,mb=60,mt=16, vals=sc.flatMap(r=>[r.kpi.savings_min,r.kpi.savings_max,0]); const lo=Math.min(...vals,0)-1, hi=Math.max(...vals)+2;
+  const Y=v=>mt+(H-mt-mb)*(1-(v-lo)/(hi-lo)), bw=(W-ml-20)/sc.length;
+  let s=`<svg class="bars" viewBox="0 0 ${W} ${H}" role="img" aria-label="Savings per scenario with min to max range">`;
+  for(let v=Math.ceil(lo/5)*5; v<=hi; v+=5) s+=`<line x1="${ml}" x2="${W-10}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" opacity=".5"/><text x="${ml-8}" y="${Y(v)+4}" text-anchor="end">${v}%</text>`;
+  s+=`<line x1="${ml}" x2="${W-10}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>`;
+  sc.forEach((r,i)=>{const k=r.kpi,cx=ml+bw*i+bw/2,w=Math.min(70,bw*.5);
+    s+=`<rect x="${cx-w/2}" y="${Math.min(Y(k.savings_mean),Y(0))}" width="${w}" height="${Math.abs(Y(k.savings_mean)-Y(0))}" rx="6" fill="var(--accent)" opacity=".85"><title>${r.name}: mean ${k.savings_mean}% (${k.savings_min}..${k.savings_max})</title></rect>
+    <line x1="${cx}" x2="${cx}" y1="${Y(k.savings_min)}" y2="${Y(k.savings_max)}" stroke="var(--text)" stroke-width="2"/><line x1="${cx-8}" x2="${cx+8}" y1="${Y(k.savings_min)}" y2="${Y(k.savings_min)}" stroke="var(--text)" stroke-width="2"/><line x1="${cx-8}" x2="${cx+8}" y1="${Y(k.savings_max)}" y2="${Y(k.savings_max)}" stroke="var(--text)" stroke-width="2"/>
+    <text x="${cx}" y="${Y(k.savings_max)-6}" text-anchor="middle" style="fill:var(--text);font-weight:600">${k.savings_mean.toFixed(1)}%</text><text x="${cx}" y="${H-mb+18}" text-anchor="middle">${r.name.replace('_',' ')}</text>`;});
+  s+='</svg>';
+  const rows=sc.map(r=>{const k=r.kpi;return `<tr style="cursor:default"><td><b>${r.name}</b><div class="sub">${esc(r.desc)}</div></td><td class="mono">${k.savings_mean.toFixed(1)}% (${k.savings_min.toFixed(1)} to ${k.savings_max.toFixed(1)})</td><td class="mono">${k.negative_runs}/${k.seeds}</td><td class="mono">${k.hit_base.toFixed(0)}% → ${k.hit_opt.toFixed(0)}%</td><td class="mono">${hm(Math.round(k.wait_base_min))} → ${hm(Math.round(k.wait_opt_min))}</td></tr>`}).join('');
+  $('#bench').innerHTML=s+`<div class="scroll"><table><thead><tr><th>Scenario</th><th>Savings, mean (range) <span class="tag r">realized</span></th><th>Runs below zero</th><th>Deadlines met: immediate → scheduled</th><th>Average wait: immediate → scheduled</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------------- refresh ---------------- */
+async function refresh(){
+  try{
+    const [h,m,tl,jobs,alerts,bench]=await Promise.all([api('/health'),api('/metrics'),api('/timeline'),api('/jobs'),api('/alerts'),api('/bench/latest')]);
+    TL=tl; JOBS=jobs; renderBanner(h,tl.forecast); renderKpis(m); renderTimeline(); renderQueue(); renderAlerts(alerts); renderBench(bench);
+    if(!$('#f-sub').value){ const base=new Date(h.sim_time); const p=d=>d.toISOString().slice(0,16); $('#f-sub').value=p(base); $('#f-dl').value=p(new Date(+base+12*3600e3)); }
+    if(SELECTED && !jobs.find(j=>j.job_id===SELECTED)) SELECTED=null;
+  }catch(e){ $('#banner').className='banner fallback'; $('#banner').textContent='Cannot reach the scheduler API: '+e.message; }
+}
+async function busy(btn,fn){btn.disabled=true;try{await fn()}catch(e){toast(e.message+(e.fix?' '+e.fix:''))}finally{btn.disabled=false}}
+
+/* ---------------- form ---------------- */
+function formBody(){
+  const iso=v=>v?v+':00Z':null, num=v=>v===''?null:Number(v);
+  const reg=$('#f-regions').value.split(',').map(x=>x.trim()).filter(Boolean);
+  return {job_id:$('#f-id').value.trim(),workload_type:$('#f-type').value,estimated_duration_minutes:num($('#f-dur').value),
+    duration_p90_minutes:num($('#f-p90').value),power_profile_kw:num($('#f-kw').value),submission_time:iso($('#f-sub').value),
+    sla_deadline:iso($('#f-dl').value),allowed_regions:reg.length?reg:['default'],data_gb:num($('#f-gb').value)||0};
+}
+function formError(e){$('#form-msg').innerHTML=`<div class="err">${esc(e.message)}${e.fix?'\n'+esc(e.fix):''}</div>`}
+$('#btn-preview').onclick=()=>busy($('#btn-preview'),async()=>{
+  try{const r=await api('/jobs/preview',{method:'POST',body:formBody()}); const p=r.plan, j=r.job;
+    const opt=p.alternatives.find(a=>a.label==='optimal'||a.label==='forced_start'), now=p.alternatives.find(a=>a.label==='run_now');
+    $('#form-msg').innerHTML=`<div class="ok-msg"><b>Chosen window:</b> ${lab(p.start)} to ${lab(opt.finish)} in region ${esc(p.region)}. About ${fmt(p.expected_gco2)} g CO2 versus ${fmt(now.gco2)} g if run now <span class="tag f">forecasted</span>.<br>${esc(j.reason)}</div>`;
+  }catch(e){formError(e)}});
+$('#btn-submit').onclick=()=>busy($('#btn-submit'),async()=>{
+  try{const r=await api('/jobs',{method:'POST',body:formBody()}); $('#form-msg').innerHTML=`<div class="ok-msg">Job submitted. ${(r.warnings||[]).map(esc).join(' ')}</div>`;
+    const n=$('#f-id'); n.value=n.value.replace(/(\d+)$/,m=>String(+m+1).padStart(m.length,'0')); await refresh(); select(r.job.job_id);
+  }catch(e){formError(e)}});
+
+/* ---------------- controls ---------------- */
+$('#btn-adv6').onclick=()=>busy($('#btn-adv6'),async()=>{await api('/sim/clock',{method:'POST',body:{hours:6}});await refresh()});
+$('#btn-adv24').onclick=()=>busy($('#btn-adv24'),async()=>{await api('/sim/clock',{method:'POST',body:{hours:24}});await refresh()});
+$('#btn-replan').onclick=()=>busy($('#btn-replan'),async()=>{const r=await api('/replan',{method:'POST'});toast(`Re-planned ${r.replanned} jobs`);await refresh()});
+$('#btn-outage').onclick=()=>busy($('#btn-outage'),async()=>{await api('/sim/fail?down='+(!OUTAGE),{method:'POST'});toast(OUTAGE?'Provider restored':'Provider down: fallback profile in use');await refresh()});
+$('#btn-seed').onclick=()=>busy($('#btn-seed'),async()=>{await api('/demo/seed',{method:'POST',body:{scenario:$('#scenario').value,seed:0}});SELECTED=null;$('#f-sub').value='';$('#decision').innerHTML='<h2>Decision support</h2><div class="empty">Select a job in the queue to see why it was scheduled this way.</div>';await refresh()});
+$('#btn-bench').onclick=()=>busy($('#btn-bench'),async()=>{$('#btn-bench').textContent='Running…';try{const b=await api('/bench/run?scenario=all&seeds=20',{method:'POST'});renderBench(b)}finally{$('#btn-bench').textContent='Run benchmark (20 seeds)'}});
+$('#btn-theme').onclick=()=>{const d=document.documentElement;const n=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=n;localStorage.setItem('theme',n)};
+document.documentElement.dataset.theme=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+(async()=>{const sc=await api('/scenarios');$('#scenario').innerHTML=sc.map(s=>`<option value="${s.name}" title="${esc(s.desc)}">${s.name.replace(/_/g,' ')}</option>`).join('');await refresh()})();
+</script>
+</body>
+</html>

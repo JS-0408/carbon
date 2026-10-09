@@ -1,0 +1,43 @@
+# Carbon-aware scheduler configuration. Environment variables (see .env.example) override scalars.
+step_min: 30            # forecast / plan step (minutes); must divide 60
+cap_kw: 8.0             # cluster power capacity per region
+pad: 1.25               # duration padding when no p90 is given
+pad_by_type:            # T18 fix: training overruns more than other work
+  model_training: 1.6
+tick_steps: 12          # re-plan interval (6 h)
+timeline_steps: 288     # simulated timeline length (6 days)
+replan_alert_steps: 4   # move size that raises a `replan` alert
+provider: mock          # mock | uk_replay | carbon_aware_sdk | watttime | electricitymaps
+provider_timeout_s: 5
+cache_ttl_min: 15
+stale_after_min: 180
+bench_seeds: 20
+transfer_g_per_gb: 5.0  # ASSUMPTION: gCO2 emitted per GB moved between regions (declared, not measured)
+overrun_by_type: {}     # simulated actual/estimated duration multiplier (demo only)
+
+# Internal region keys -> provider-native codes. Never hardcode provider strings in code.
+regions:
+  default:
+    label: "South India (synthetic)"
+    synthetic: true
+    profile: {base: 700, dip: 170, dip_c: 13, dip_w: 3.2, peak: 90, peak_c: 20, peak_w: 1.8}
+    codes:
+      watttime: {lat: 17.38, lon: 78.48}          # resolved with /v3/region-from-loc
+      electricitymaps: {zone: "IN-SO"}            # UNVERIFIED: call /zones to confirm
+      carbon_aware_sdk: {location: "centralindia"} # UNVERIFIED coverage
+  west:
+    label: "West grid (synthetic)"
+    synthetic: true
+    profile: {base: 760, dip: 110, dip_c: 12.5, dip_w: 3.0, peak: 70, peak_c: 19.5, peak_w: 2.0}
+    codes: {}
+  hydro:
+    label: "Hydro-heavy grid (synthetic)"
+    synthetic: true
+    profile: {base: 260, dip: 30, dip_c: 12, dip_w: 3.0, peak: 40, peak_c: 19, peak_w: 2.0}
+    codes: {}
+  uk:
+    label: "Great Britain (real data via UK Carbon Intensity API)"
+    synthetic: false
+    profile: {base: 190, dip: 60, dip_c: 13, dip_w: 3.5, peak: 55, peak_c: 18, peak_w: 1.8}   # fallback diurnal profile (static)
+    codes:
+      uk_carbon_intensity: {national: true}

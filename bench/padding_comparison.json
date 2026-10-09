@@ -1,0 +1,164 @@
+{
+ "before": {
+  "pad_by_type": {},
+  "scenarios": {
+   "weekday_mix": {
+    "seeds": 20,
+    "savings_mean": 7.05,
+    "savings_min": 1.42,
+    "savings_max": 15.63,
+    "savings_stdev": 3.7,
+    "negative_runs": 0,
+    "forecasted_savings_mean": 7.15,
+    "hit_base": 99.58,
+    "hit_opt": 100.0,
+    "wait_base_min": 6.3,
+    "wait_opt_min": 225.05,
+    "e_base_g_mean": 37197,
+    "e_opt_g_mean": 34624
+   },
+   "tight_deadlines": {
+    "seeds": 20,
+    "savings_mean": 1.28,
+    "savings_min": -0.5,
+    "savings_max": 3.91,
+    "savings_stdev": 1.14,
+    "negative_runs": 1,
+    "forecasted_savings_mean": 1.47,
+    "hit_base": 99.58,
+    "hit_opt": 98.75,
+    "wait_base_min": 2.35,
+    "wait_opt_min": 42.3,
+    "e_base_g_mean": 36590,
+    "e_opt_g_mean": 36092
+   },
+   "api_outage": {
+    "seeds": 20,
+    "savings_mean": 6.46,
+    "savings_min": -3.28,
+    "savings_max": 11.01,
+    "savings_stdev": 3.6,
+    "negative_runs": 1,
+    "forecasted_savings_mean": 6.81,
+    "hit_base": 100.0,
+    "hit_opt": 99.58,
+    "wait_base_min": 5.35,
+    "wait_opt_min": 240.75,
+    "e_base_g_mean": 37806,
+    "e_opt_g_mean": 35576
+   },
+   "overrun_cloudy": {
+    "seeds": 20,
+    "savings_mean": 3.2,
+    "savings_min": -0.99,
+    "savings_max": 6.98,
+    "savings_stdev": 2.02,
+    "negative_runs": 3,
+    "forecasted_savings_mean": 3.86,
+    "hit_base": 99.58,
+    "hit_opt": 89.17,
+    "wait_base_min": 8.55,
+    "wait_opt_min": 268.7,
+    "e_base_g_mean": 53983,
+    "e_opt_g_mean": 52411
+   },
+   "heavy_load": {
+    "seeds": 20,
+    "savings_mean": 4.46,
+    "savings_min": -1.4,
+    "savings_max": 11.29,
+    "savings_stdev": 3.32,
+    "negative_runs": 1,
+    "forecasted_savings_mean": 4.83,
+    "hit_base": 96.87,
+    "hit_opt": 97.7,
+    "wait_base_min": 30.4,
+    "wait_opt_min": 303.9,
+    "e_base_g_mean": 82466,
+    "e_opt_g_mean": 79068
+   }
+  }
+ },
+ "after": {
+  "pad_by_type": {
+   "model_training": 1.6
+  },
+  "scenarios": {
+   "weekday_mix": {
+    "seeds": 20,
+    "savings_mean": 6.47,
+    "savings_min": 1.37,
+    "savings_max": 12.92,
+    "savings_stdev": 2.98,
+    "negative_runs": 0,
+    "forecasted_savings_mean": 6.61,
+    "hit_base": 99.58,
+    "hit_opt": 99.58,
+    "wait_base_min": 6.3,
+    "wait_opt_min": 222.5,
+    "e_base_g_mean": 37197,
+    "e_opt_g_mean": 34794
+   },
+   "tight_deadlines": {
+    "seeds": 20,
+    "savings_mean": 0.68,
+    "savings_min": -0.5,
+    "savings_max": 2.22,
+    "savings_stdev": 0.67,
+    "negative_runs": 1,
+    "forecasted_savings_mean": 0.77,
+    "hit_base": 99.58,
+    "hit_opt": 98.34,
+    "wait_base_min": 2.35,
+    "wait_opt_min": 35.2,
+    "e_base_g_mean": 36590,
+    "e_opt_g_mean": 36343
+   },
+   "api_outage": {
+    "seeds": 20,
+    "savings_mean": 5.37,
+    "savings_min": -0.23,
+    "savings_max": 10.37,
+    "savings_stdev": 3.1,
+    "negative_runs": 1,
+    "forecasted_savings_mean": 5.52,
+    "hit_base": 100.0,
+    "hit_opt": 99.58,
+    "wait_base_min": 5.35,
+    "wait_opt_min": 225.6,
+    "e_base_g_mean": 37806,
+    "e_opt_g_mean": 36013
+   },
+   "overrun_cloudy": {
+    "seeds": 20,
+    "savings_mean": 2.52,
+    "savings_min": -0.83,
+    "savings_max": 6.09,
+    "savings_stdev": 1.88,
+    "negative_runs": 3,
+    "forecasted_savings_mean": 2.57,
+    "hit_base": 99.58,
+    "hit_opt": 98.75,
+    "wait_base_min": 8.55,
+    "wait_opt_min": 250.65,
+    "e_base_g_mean": 53983,
+    "e_opt_g_mean": 52774
+   },
+   "heavy_load": {
+    "seeds": 20,
+    "savings_mean": 3.78,
+    "savings_min": -1.4,
+    "savings_max": 9.53,
+    "savings_stdev": 2.91,
+    "negative_runs": 2,
+    "forecasted_savings_mean": 3.98,
+    "hit_base": 96.87,
+    "hit_opt": 95.0,
+    "wait_base_min": 30.4,
+    "wait_opt_min": 299.4,
+    "e_base_g_mean": 82466,
+    "e_opt_g_mean": 79607
+   }
+  }
+ }
+}

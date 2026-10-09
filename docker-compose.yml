@@ -1,0 +1,22 @@
+services:
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carbon-aware-scheduler
+    ports:
+      - "8000:8000"
+    environment:
+      - CONFIG_FILE=config.yaml
+      - DB_PATH=/app/data/audit.sqlite
+      - PROVIDER=mock
+      - AUTO_SEED=1
+    volumes:
+      - ./data:/app/data
+      - ./bench:/app/bench
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
