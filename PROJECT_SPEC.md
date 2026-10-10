@@ -405,6 +405,7 @@ Record deviations in docs/DECISIONS.md. Ask before adding dependencies not in Se
 | 2026-10-09 | M6 (T17-T18) | DONE | `python -m backend.app.bench --compare`: 100 seeds run | Training padding 1.6x raised cloudy deadline hit from 89% to 99% |
 | 2026-10-09 | M7 (T19-T21) | DONE | `docs/REPORT.md`, `docs/DEMO_SCRIPT.md`, `docs/DECISIONS.md`, 88 tests pass | Section 2 all green, complete validation |
 | 2026-10-09 | Stretch S1-S3 | DONE | Spatial shifting (transfer penalty), K8s backend, CodeCarbon calibration | All stretch items implemented and tested |
+| 2026-10-09 | Real data integration | DONE | `fetch_uk_live.py` → 289 pts (18–258 gCO2/kWh); `pytest test_real_data.py` 22/22 passed; total suite 110 passed | Live UK Carbon Intensity API (keyless, CC BY 4.0); ADR-011; `make fetch-real-data` refreshes snapshot |
 
 ---
 

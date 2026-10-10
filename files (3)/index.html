@@ -50,23 +50,20 @@
         <div class="card" id="detail"></div>
       </div>
       <div class="card">
-        <div class="head"><h2>Submit a job</h2><span class="muted">Preview or submit to scheduler</span></div>
+        <div class="head"><h2>Submit a job</h2><span class="muted">Preview only in this demo</span></div>
         <div class="form">
           <label class="field">Type
             <select class="input" id="f-type">
-              <option value="realtime_inference">Urgent inference</option>
+              <option value="urgent_inference">Urgent inference</option>
               <option value="batch_inference">Batch inference</option>
-              <option value="model_training" selected>Training</option>
+              <option value="training" selected>Training</option>
               <option value="etl">ETL</option>
             </select></label>
           <label class="field">Duration (hours)<input class="input" id="f-dur" type="number" min="1" max="12" value="3"></label>
           <label class="field">Power (kW)<input class="input" id="f-kw" type="number" min="0.5" max="8" step="0.5" value="2"></label>
           <label class="field">Submitted at hour<input class="input" id="f-sub" type="number" min="0" max="47" value="15"></label>
           <label class="field">Deadline at hour<input class="input" id="f-dl" type="number" min="1" max="71" value="40"></label>
-          <div class="full" style="display:flex;gap:12px;flex-wrap:wrap">
-            <button class="btn primary" id="f-go">Preview schedule</button>
-            <button class="btn" id="f-submit" style="display:none">Confirm and submit</button>
-          </div>
+          <div class="full"><button class="btn primary" id="f-go">Preview schedule</button></div>
           <div class="full well" id="f-out" aria-live="polite">Enter a job and choose Preview schedule.</div>
         </div>
       </div>
@@ -93,7 +90,6 @@
   </main>
 </div>
 <script src="js/data.js"></script>
-<script src="js/live.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

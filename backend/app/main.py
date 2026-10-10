@@ -271,9 +271,20 @@ def create_app(settings: Settings | None = None, db_path: str | None = None, see
     # ------------------------------------------------------------------ UI
     if FRONTEND.exists():
         app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
+        if (FRONTEND / "css").exists():
+            app.mount("/css", StaticFiles(directory=str(FRONTEND / "css")), name="css")
+        if (FRONTEND / "js").exists():
+            app.mount("/js", StaticFiles(directory=str(FRONTEND / "js")), name="js")
 
         @app.get("/", include_in_schema=False)
         def index():
+            return FileResponse(FRONTEND / "index.html")
+
+        @app.get("/legacy", include_in_schema=False)
+        def legacy():
+            legacy_file = FRONTEND / "legacy.html"
+            if legacy_file.exists():
+                return FileResponse(legacy_file)
             return FileResponse(FRONTEND / "index.html")
 
     return app

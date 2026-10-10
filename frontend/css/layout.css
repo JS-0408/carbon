@@ -1,0 +1,59 @@
+/* Page layout. Uses only classes and tokens from neumorphism.css. */
+.app { max-width: 1120px; margin: 0 auto; padding: 28px 20px 56px; display: grid; gap: 24px; }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 24px; }
+.brand { display: flex; align-items: center; gap: 14px; margin-right: auto; }
+.logo { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; box-shadow: var(--raise-sm); color: var(--accent); font-size: 22px; }
+.brand h1 { font-size: 21px; }
+.brand p { font-size: 13px; color: var(--muted); }
+.nav { display: flex; flex-wrap: wrap; gap: 12px; }
+.banner { font-size: 13.5px; }
+
+.view[hidden] { display: none; }
+.view { display: grid; gap: 24px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
+.kpi { display: flex; align-items: center; gap: 16px; }
+.kpi .label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.kpi .value { font-size: 22px; font-weight: 800; line-height: 1.2; }
+.kpi .hint { font-size: 12.5px; color: var(--muted); }
+
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+.legend i { display: inline-block; width: 14px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { fill: var(--muted); font: 11px var(--font); }
+.chart .grid { stroke: var(--sh-dark); stroke-opacity: .25; }
+.chart .area { fill: var(--accent); fill-opacity: .12; }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.chart .act { fill: none; stroke: var(--warn); stroke-width: 1.8; stroke-dasharray: 5 4; }
+.chart .base { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart .run { fill: var(--accent-soft); }
+.chart .run.crit { stroke: var(--crit); stroke-width: 2; }
+.chart .now { stroke: var(--text); stroke-width: 1.5; }
+.chart .dl { fill: var(--text); }
+.chart .bar { fill: var(--accent-soft); }
+.chart .whisk { stroke: var(--text); stroke-width: 2; }
+.chart .zero { stroke: var(--muted); }
+.chart .lbl { fill: var(--text); font-weight: 700; }
+
+.split { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; align-items: start; }
+.list { display: grid; gap: 14px; }
+.job { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; text-align: left; width: 100%; cursor: pointer;
+  font: inherit; color: var(--text); background: var(--bg); border: 0; border-radius: var(--radius-sm); padding: 14px 16px; box-shadow: var(--raise-sm); }
+.job[aria-pressed="true"] { box-shadow: var(--inset-sm); }
+.job b { font-size: 15px; } .job .sub { font-size: 12.5px; color: var(--muted); grid-column: 1 / -1; }
+.alts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 14px 0; }
+.alts .tile b { display: block; font-size: 18px; }
+.alts .tile.best { box-shadow: var(--inset-sm); }
+.alts small { color: var(--muted); font-size: 12px; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.form .full { grid-column: 1 / -1; }
+.alert { display: grid; gap: 4px; }
+.alert .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.alert.done { opacity: .65; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(128,140,160,.25); }
+th { color: var(--muted); font-weight: 700; font-size: 12.5px; }
+.scroll { overflow-x: auto; }
+.empty { color: var(--muted); padding: 12px 0; }
+
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } .app { padding: 18px 14px 40px; } }

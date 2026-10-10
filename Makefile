@@ -1,4 +1,4 @@
-.PHONY: install test bench demo run clean docker-build docker-up
+.PHONY: install test bench demo run clean docker-build docker-up fetch-real-data test-live
 
 VENV = .venv
 PYTHON = $(VENV)/Scripts/python
@@ -22,6 +22,15 @@ install:
 
 test:
 	$(TEST_CMD) backend/tests
+
+# Fetch fresh real data from UK Carbon Intensity API (keyless, CC BY 4.0).
+# Updates backend/data/uk_snapshot.json with the latest 6 days.
+fetch-real-data:
+	$(PY_CMD) scripts/fetch_uk_live.py 6
+
+# Run tests that hit live network endpoints (opt-in, requires internet access).
+test-live:
+	$(TEST_CMD) backend/tests -m network -v
 
 bench:
 	$(PY_CMD) -m backend.app.bench --compare

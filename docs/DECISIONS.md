@@ -71,3 +71,22 @@ This document records key architectural decisions, rationale, and findings durin
 - **Context:** Real-data evaluation must remain fully functional in offline demo venues where Wi-Fi is unavailable or unstable. Additionally, executive summaries must accurately reflect deadline degradation under extreme contention.
 - **Decision:** Fetched and committed a 289-interval 6-day Great Britain grid trace to `backend/data/uk_snapshot.json`. Enhanced `UKReplayProvider` with instantaneous offline snapshot loading. Added scenario `uk_real_data` to the canonical benchmark suite. Explicitly disclosed the deadline compliance dips (98% under tight deadlines, 95% under heavy load) in `REPORT.md`.
 - **Consequences:** The benchmark and demo run 100% offline without network dependencies, verifying 23.6% mean carbon savings on real grid data while maintaining transparency regarding peak queue contention.
+
+---
+
+### ADR-011: Automated Live Data Refresh + Real-Data Test Suite
+- **Context:** Previously the UK snapshot was hand-committed and could silently go stale. Tests used only synthetic data or hand-crafted fixtures for the UK provider; no tests exercised the actual API response or real GB intensities.
+- **Decision:**
+  1. Added `scripts/fetch_uk_live.py`: fetches 6 days of live data from `api.carbonintensity.org.uk`, validates range/format, and updates `backend/data/uk_snapshot.json` atomically.
+  2. Added `make fetch-real-data` and `make test-live` Makefile targets.
+  3. Added `backend/tests/test_real_data.py` with 22 tests covering:
+     - Snapshot sanity (point count, value range, timestamps, metadata)
+     - Provider layer (correct region, step enforcement, real intensity values)
+     - Observer layer (source label, INV5 compliance, cache correctness)
+     - Scheduler invariants INV1 and INV3 on real GB intensities
+     - Savings calculation using real actual-intensity values
+     - Optional live network fetch tests (opt-in via `pytest -m network`)
+  4. Registered the `network` custom mark in `pytest.ini`.
+- **Verified:** `fetch_uk_live.py` fetched 289 real data points (range: 18–258 gCO2/kWh, 2026-10-03 to 2026-10-09). All 110 tests pass (including the 22 new real-data tests). INV1, INV3, INV5 verified on real GB grid data.
+- **Data source:** `https://api.carbonintensity.org.uk` — National Energy System Operator (NESO), keyless, CC BY 4.0.
+- **Consequences:** Real-data freshness is now a deliberate step (`make fetch-real-data`) rather than accidental. Tests catch regressions in the UK provider and prove end-to-end scheduling correctness on real carbon intensity data.
